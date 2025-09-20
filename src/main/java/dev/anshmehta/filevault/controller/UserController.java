@@ -2,6 +2,7 @@ package dev.anshmehta.filevault.controller;
 
 import dev.anshmehta.filevault.dto.UserAuthRequest;
 import dev.anshmehta.filevault.service.UserService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,13 +19,24 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public boolean registerUser(@RequestBody UserAuthRequest userAuthRequest) {
-        return userService.registerUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
+    public ResponseEntity<String> registerUser(@RequestBody UserAuthRequest userAuthRequest) {
+        boolean result = userService.registerUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
+        if (result) {
+            return ResponseEntity.ok("User registered successfully");
+        } else {
+            return ResponseEntity.status(400).body("User registration failed");
+        }
     }
 
     @PostMapping("/login")
-    public boolean loginUser(@RequestBody UserAuthRequest userAuthRequest) {
-        return userService.authenticateUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
+    public ResponseEntity<String> loginUser(@RequestBody UserAuthRequest userAuthRequest) {
+        boolean result = userService.authenticateUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
+        if(result){
+            return ResponseEntity.ok("User logged successfully");
+        }
+        else{
+            return ResponseEntity.status(400).body("User login failed");
+        }
     }
 
 
