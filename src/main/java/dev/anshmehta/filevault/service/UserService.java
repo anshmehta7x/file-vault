@@ -1,33 +1,35 @@
 package dev.anshmehta.filevault.service;
 
 
+import dev.anshmehta.filevault.config.JwtUtil;
 import dev.anshmehta.filevault.model.User;
 import dev.anshmehta.filevault.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 
 @Service
 public class UserService {
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
+    private JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
-    public boolean registerUser(String username, String password) {
+    public String registerUser(String username, String password) {
         if(userRepository.existsByUsername(username)) {
-            return false; // User already exists
+            return null; // User already exists
         } else {
             User newUser = new User();
             newUser.setUsername(username);
             String hashedPassword = passwordEncoder.encode(password);
             newUser.setPasswordHash(hashedPassword);
             userRepository.save(newUser);
-            return true;
+            return jwtUtil.generateToken(username);
         }
     }
 
@@ -36,5 +38,13 @@ public class UserService {
                 .map(user -> passwordEncoder.matches(password, user.getPasswordHash()))
                 .orElse(false);
     }
+
+    public String loginUser(String username, String password) {
+        if (authenticateUser(username, password)) {
+            return jwtUtil.generateToken(username);
+        }
+        return null;
+    }
+
 
 }
