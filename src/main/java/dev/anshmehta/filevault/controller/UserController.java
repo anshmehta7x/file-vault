@@ -2,14 +2,9 @@ package dev.anshmehta.filevault.controller;
 
 import dev.anshmehta.filevault.dto.UserAuthRequest;
 import dev.anshmehta.filevault.dto.UserAuthResponse;
-import dev.anshmehta.filevault.model.User;
 import dev.anshmehta.filevault.service.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/user")
@@ -20,6 +15,8 @@ public class UserController {
     UserController(UserService userService) {
         this.userService = userService;
     }
+
+
 
     @PostMapping("/register")
     public ResponseEntity<UserAuthResponse> registerUser(@RequestBody UserAuthRequest userAuthRequest) {
@@ -33,8 +30,6 @@ public class UserController {
         }
     }
 
-
-
     @PostMapping("/login")
     public ResponseEntity<UserAuthResponse> loginUser(@RequestBody UserAuthRequest userAuthRequest) {
         String token = userService.loginUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
@@ -46,8 +41,5 @@ public class UserController {
             return ResponseEntity.badRequest().body(response);
         }
     }
-
-
-
 
 }

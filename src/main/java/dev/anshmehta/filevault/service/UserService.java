@@ -29,7 +29,7 @@ public class UserService {
             String hashedPassword = passwordEncoder.encode(password);
             newUser.setPasswordHash(hashedPassword);
             userRepository.save(newUser);
-            return jwtUtil.generateToken(username);
+            return jwtUtil.generateToken(newUser.getUserId());
         }
     }
 
@@ -41,10 +41,13 @@ public class UserService {
 
     public String loginUser(String username, String password) {
         if (authenticateUser(username, password)) {
-            return jwtUtil.generateToken(username);
+            return userRepository.findByUsername(username)
+                    .map(user -> jwtUtil.generateToken(user.getUserId()))
+                    .orElse(null);
         }
         return null;
     }
+
 
 
 }
