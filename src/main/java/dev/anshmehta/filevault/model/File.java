@@ -1,5 +1,7 @@
 package dev.anshmehta.filevault.model;
+import dev.anshmehta.filevault.enums.FileAccess;
 import jakarta.persistence.*;
+
 
 @Entity
 public class File {
@@ -10,15 +12,22 @@ public class File {
 
     private String url;
     private String filename;
+    private String fileHash;
+    private Long fileSize;
 
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "userId")
     private User owner;
 
-    public File(String testURL, String originalFilename, User owner) {
+    @Enumerated(EnumType.STRING)
+    private FileAccess fileAccess = FileAccess.PRIVATE;
+
+    public File(String testURL, String originalFilename, String fileHash,Long fileSize ,User owner) {
         this.url = testURL;
         this.filename = originalFilename;
+        this.fileSize = fileSize;
         this.owner = owner;
+        this.fileHash = fileHash;
     }
 
     public File() {

@@ -16,8 +16,6 @@ public class UserController {
         this.userService = userService;
     }
 
-
-
     @PostMapping("/register")
     public ResponseEntity<UserAuthResponse> registerUser(@RequestBody UserAuthRequest userAuthRequest) {
         String result = userService.registerUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
