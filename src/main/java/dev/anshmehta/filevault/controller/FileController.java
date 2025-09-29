@@ -1,16 +1,15 @@
 package dev.anshmehta.filevault.controller;
 
+import dev.anshmehta.filevault.dto.FileListResponse;
 import dev.anshmehta.filevault.dto.FileUploadResponse;
 import dev.anshmehta.filevault.model.User;
 import dev.anshmehta.filevault.service.FileService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -37,4 +36,21 @@ public class FileController {
         }
 
     }
+
+    @GetMapping("/list")
+    public ResponseEntity<List<FileListResponse>> listFiles(@AuthenticationPrincipal User user) {
+        try{
+            List<FileListResponse> files = fileService.getAllFilesForUser(user);
+            if(files.isEmpty()){
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok().body(files);
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().build();
+        }
+
+    }
+
 }

@@ -4,16 +4,16 @@ import jakarta.persistence.*;
 
 
 @Entity
-public class File {
+public class UploadedFile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String fileId;
-
-    private String url;
     private String filename;
-    private String fileHash;
-    private Long fileSize;
+
+    @ManyToOne
+    @JoinColumn(name = "file_hash", referencedColumnName = "fileHash")
+    private IndividualFile individualFile;
 
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "userId")
@@ -22,18 +22,17 @@ public class File {
     @Enumerated(EnumType.STRING)
     private FileAccess fileAccess = FileAccess.PRIVATE;
 
-    public File(String testURL, String originalFilename, String fileHash,Long fileSize ,User owner) {
-        this.url = testURL;
+    public UploadedFile(String originalFilename, User owner, IndividualFile individualFile) {
         this.filename = originalFilename;
-        this.fileSize = fileSize;
         this.owner = owner;
-        this.fileHash = fileHash;
+        this.individualFile = individualFile;
     }
 
-    public File() {
+    public UploadedFile() {
 
     }
 
+    // Getters and setters
     public String getFileId() {
         return fileId;
     }
@@ -50,12 +49,12 @@ public class File {
         this.filename = filename;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public IndividualFile getIndividualFile() {
+        return individualFile;
     }
 
-    public String getUrl() {
-        return url;
+    public void setIndividualFile(IndividualFile individualFile) {
+        this.individualFile = individualFile;
     }
 
     public User getOwner() {
@@ -66,4 +65,11 @@ public class File {
         this.owner = owner;
     }
 
+    public FileAccess getFileAccess() {
+        return fileAccess;
+    }
+
+    public void setFileAccess(FileAccess fileAccess) {
+        this.fileAccess = fileAccess;
+    }
 }

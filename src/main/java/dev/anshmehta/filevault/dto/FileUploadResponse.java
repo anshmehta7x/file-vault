@@ -1,7 +1,4 @@
 package dev.anshmehta.filevault.dto;
-
-import dev.anshmehta.filevault.model.File;
-
 import java.util.Optional;
 
 public class FileUploadResponse {
