@@ -95,4 +95,25 @@ public class FileController {
             );
         }
     }
+
+    @DeleteMapping("/delete")
+    public CompletableFuture<ResponseEntity<String>> deleteAllFiles(@AuthenticationPrincipal User user) {
+        try{
+            return fileService.deleteAllFilesForUser(user)
+                    .handle((success, ex) -> {
+                        if (ex != null) {
+                            return ResponseEntity.badRequest().body(ex.getMessage());
+                        }
+                        if (success) {
+                            return ResponseEntity.ok().body("All files deleted successfully");
+                        } else {
+                            return ResponseEntity.badRequest().body("Error deleting files");
+                        }
+                    });
+        } catch (Exception e) {
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.badRequest().body(e.getMessage())
+            );
+        }
+    }
 }

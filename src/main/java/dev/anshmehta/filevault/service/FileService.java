@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -107,41 +108,41 @@ public class FileService {
         }
     }
 
+    public CompletableFuture<Boolean> deleteFromS3(IndividualFile individualFile, UploadedFile fileToDelete) {
+        return s3Service.deleteFile(individualFile.getUrl())
+                .handle((success, ex) -> {
+                    if (ex != null) {
+                        throw new RuntimeException("Error deleting file from S3: " + ex.getMessage(), ex);
+                    }
+
+                    if (success) {
+                        try {
+                            uploadedFileRepository.delete(fileToDelete);
+
+                            individualFileRepository.delete(individualFile);
+
+                            return true;
+                        } catch (Exception dbEx) {
+                            throw new RuntimeException("Error deleting from database: " + dbEx.getMessage(), dbEx);
+                        }
+                    } else {
+                        throw new RuntimeException("Error deleting file from S3");
+                    }
+                });
+    }
+
     public CompletableFuture<Boolean> deleteFile(String fileId, User user) throws Exception {
         Optional<UploadedFile> uploadedFile = uploadedFileRepository.findById(fileId);
-
         if (uploadedFile.isEmpty()) {
             throw new Exception("File does not exist");
         }
-
         UploadedFile fileToDelete = uploadedFile.get();
         IndividualFile individualFile = fileToDelete.getIndividualFile();
-
         if(!fileToDelete.getOwner().getUserId().equals(user.getUserId())) {
             throw new Exception("Unauthorized to delete this file");
         }
-
         if (individualFile.getUploadCount() == 1) {
-            return s3Service.deleteFile(individualFile.getUrl())
-                    .handle((success, ex) -> {
-                        if (ex != null) {
-                            throw new RuntimeException("Error deleting file from S3: " + ex.getMessage(), ex);
-                        }
-
-                        if (success) {
-                            try {
-                                uploadedFileRepository.delete(fileToDelete);
-
-                                individualFileRepository.delete(individualFile);
-
-                                return true;
-                            } catch (Exception dbEx) {
-                                throw new RuntimeException("Error deleting from database: " + dbEx.getMessage(), dbEx);
-                            }
-                        } else {
-                            throw new RuntimeException("Error deleting file from S3");
-                        }
-                    });
+            return deleteFromS3(individualFile, fileToDelete);
         } else {
             individualFile.decrementUploadCount();
             individualFileRepository.save(individualFile);
@@ -151,4 +152,27 @@ public class FileService {
             return CompletableFuture.completedFuture(true);
         }
     }
+
+    public CompletableFuture<Boolean> deleteAllFilesForUser(User user){
+        List<UploadedFile> uploadedFiles = uploadedFileRepository.findByOwner(user);
+
+        if (uploadedFiles.isEmpty()) {
+            return CompletableFuture.completedFuture(true);
+        }
+        List<CompletableFuture<Boolean>> futures = new ArrayList<>();
+        for(UploadedFile uploadedFile : uploadedFiles){
+            try {
+                futures.add(deleteFile(uploadedFile.getFileId(), user));
+            }
+            catch (Exception e) {
+                return CompletableFuture.completedFuture(false);
+            }
+        }
+        CompletableFuture<?>[] futuresArray = futures.toArray(new CompletableFuture[0]);
+        CompletableFuture<Void> allDeletesFuture = CompletableFuture.allOf(futuresArray);
+        return allDeletesFuture.thenApply(v -> true)
+                .exceptionally(ex -> false);
+    }
+
+
 }
