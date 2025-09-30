@@ -24,7 +24,9 @@ public class FileService {
     private final IndividualFileRepository individualFileRepository;
     private final S3Service s3Service;
 
-    FileService(UploadedFileRepository uploadedFileRepository, IndividualFileRepository individualFileRepository, S3Service s3Service) {
+    FileService(UploadedFileRepository uploadedFileRepository,
+                IndividualFileRepository individualFileRepository,
+                S3Service s3Service) {
         this.uploadedFileRepository = uploadedFileRepository;
         this.individualFileRepository = individualFileRepository;
         this.s3Service = s3Service;
@@ -34,11 +36,12 @@ public class FileService {
         if (file == null || file.isEmpty()) {
             return 0L;
         }
-        return file.getSize(); // size in bytes
+        return file.getSize();
     }
 
     public List<FileListResponse> getAllFilesForUser(User owner) {
         List<UploadedFile> uploadedFiles = uploadedFileRepository.findByOwner(owner);
+
         return uploadedFiles.stream().map(
                 file -> new FileListResponse(
                         file.getFileId(),
@@ -51,9 +54,15 @@ public class FileService {
     }
 
     public CompletableFuture<Optional<String>> createFile(MultipartFile file, User user) throws Exception {
-        String fileHash = HashUtil.getFileHash(file);
-        System.out.println("HERE 1");
+        String fileHash;
+        try {
+            fileHash = HashUtil.getFileHash(file);
+        } catch (Exception e) {
+            throw new Exception("Error computing file hash: " + e.getMessage());
+        }
+
         Long fileSize = convertFileSizeToLong(file);
+
         if (fileSize <= 0L) {
             throw new Exception("File is Empty");
         }
@@ -61,8 +70,8 @@ public class FileService {
         Optional<IndividualFile> existingIndividualFile = individualFileRepository.findById(fileHash);
 
         if (existingIndividualFile.isPresent()) {
-            // File already exists, no need to upload
             IndividualFile individualFile = existingIndividualFile.get();
+
             individualFile.incrementUploadCount();
             individualFileRepository.save(individualFile);
 
@@ -71,20 +80,26 @@ public class FileService {
 
             return CompletableFuture.completedFuture(Optional.of(individualFile.getUrl()));
         } else {
-            // New file, need to upload to S3
             try {
                 return s3Service.uploadFile(file)
-                        .thenApply(uploadURL -> {
-                            IndividualFile individualFile = new IndividualFile(fileHash, uploadURL, fileSize);
-                            individualFileRepository.save(individualFile);
+                        .handle((uploadURL, ex) -> {
+                            if (ex != null) {
+                                throw new RuntimeException("Error uploading file to S3: " + ex.getMessage(), ex);
+                            }
 
-                            UploadedFile uploadedFileToSave = new UploadedFile(file.getOriginalFilename(), user, individualFile);
-                            uploadedFileRepository.save(uploadedFileToSave);
+                            try {
+                                IndividualFile individualFile = new IndividualFile(fileHash, uploadURL, fileSize);
+                                individualFileRepository.save(individualFile);
 
-                            return Optional.of(individualFile.getUrl());
-                        })
-                        .exceptionally(ex -> {
-                            throw new RuntimeException("Error uploading file to S3: " + ex.getMessage(), ex);
+                                UploadedFile uploadedFileToSave = new UploadedFile(
+                                        file.getOriginalFilename(), user, individualFile
+                                );
+                                uploadedFileRepository.save(uploadedFileToSave);
+
+                                return Optional.of(individualFile.getUrl());
+                            } catch (Exception dbEx) {
+                                throw new RuntimeException("Error saving file to database: " + dbEx.getMessage(), dbEx);
+                            }
                         });
             } catch (IOException e) {
                 throw new Exception("Error reading file: " + e.getMessage());
@@ -108,22 +123,31 @@ public class FileService {
 
         if (individualFile.getUploadCount() == 1) {
             return s3Service.deleteFile(individualFile.getUrl())
-                    .thenApply(success -> {
+                    .handle((success, ex) -> {
+                        if (ex != null) {
+                            throw new RuntimeException("Error deleting file from S3: " + ex.getMessage(), ex);
+                        }
+
                         if (success) {
-                            uploadedFileRepository.delete(fileToDelete);
-                            individualFileRepository.delete(individualFile);
-                            return true;
+                            try {
+                                uploadedFileRepository.delete(fileToDelete);
+
+                                individualFileRepository.delete(individualFile);
+
+                                return true;
+                            } catch (Exception dbEx) {
+                                throw new RuntimeException("Error deleting from database: " + dbEx.getMessage(), dbEx);
+                            }
                         } else {
                             throw new RuntimeException("Error deleting file from S3");
                         }
-                    })
-                    .exceptionally(ex -> {
-                        throw new RuntimeException("Error deleting file: " + ex.getMessage(), ex);
                     });
         } else {
             individualFile.decrementUploadCount();
             individualFileRepository.save(individualFile);
+
             uploadedFileRepository.delete(fileToDelete);
+
             return CompletableFuture.completedFuture(true);
         }
     }
