@@ -2,10 +2,13 @@ package dev.anshmehta.filevault.service;
 
 
 import dev.anshmehta.filevault.config.JwtUtil;
+import dev.anshmehta.filevault.dto.UserListResponse;
 import dev.anshmehta.filevault.model.User;
 import dev.anshmehta.filevault.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 
 @Service
@@ -46,6 +49,13 @@ public class UserService {
                     .orElse(null);
         }
         return null;
+    }
+
+    public List<UserListResponse> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return users.stream()
+                .map(user -> new UserListResponse(user.getUserId(), user.getUsername()))
+                .toList();
     }
 
 

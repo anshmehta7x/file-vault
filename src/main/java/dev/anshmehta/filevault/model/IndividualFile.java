@@ -18,6 +18,8 @@ public class IndividualFile {
     @OneToMany(mappedBy = "individualFile")
     private List<UploadedFile> uploadedFiles = new ArrayList<>();
 
+    
+
     public IndividualFile() {
     }
 

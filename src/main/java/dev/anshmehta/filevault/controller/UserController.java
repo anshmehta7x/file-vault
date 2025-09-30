@@ -2,15 +2,18 @@ package dev.anshmehta.filevault.controller;
 
 import dev.anshmehta.filevault.dto.UserAuthRequest;
 import dev.anshmehta.filevault.dto.UserAuthResponse;
+import dev.anshmehta.filevault.dto.UserListResponse;
 import dev.anshmehta.filevault.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/user")
 public class UserController {
 
-    private UserService userService;
+    private final UserService userService;
 
     UserController(UserService userService) {
         this.userService = userService;
@@ -39,5 +42,17 @@ public class UserController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    @GetMapping("/list")
+    public ResponseEntity<List<UserListResponse>> getAllUsers() {
+        try{
+            List<UserListResponse> users = userService.getAllUsers();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
+    }
+
 
 }

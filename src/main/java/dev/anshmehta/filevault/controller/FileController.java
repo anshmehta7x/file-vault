@@ -55,6 +55,18 @@ public class FileController {
         }
     }
 
+    @GetMapping("/{fileId}")
+    public ResponseEntity<FileListResponse> getFileById(
+            @PathVariable String fileId,
+            @AuthenticationPrincipal User user) {
+        try {
+            FileListResponse file = fileService.getFileById(fileId, user);
+            return ResponseEntity.ok().body(file);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @GetMapping("/list")
     public ResponseEntity<List<FileListResponse>> listFiles(@AuthenticationPrincipal User user) {
         try {
@@ -116,4 +128,24 @@ public class FileController {
             );
         }
     }
+
+    @PutMapping("/rename/{fileId}")
+    public ResponseEntity<String> renameFile(
+            @PathVariable String fileId,
+            @AuthenticationPrincipal User user,
+            @RequestParam String newFileName) {
+        try {
+            if(fileService.renameFile(newFileName, fileId, user)){
+                return ResponseEntity.ok().body("File renamed successfully");
+            }
+            else{
+                return ResponseEntity.badRequest().body("Error renaming file");
+            }
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
 }

@@ -2,6 +2,9 @@ package dev.anshmehta.filevault.model;
 import dev.anshmehta.filevault.enums.FileAccess;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 @Entity
 public class UploadedFile {
@@ -18,6 +21,14 @@ public class UploadedFile {
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "userId")
     private User owner;
+
+    @ManyToMany
+    @JoinTable(
+            name = "file_access_list",
+            joinColumns = @JoinColumn(name = "file_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<User> accessList = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     private FileAccess fileAccess = FileAccess.PRIVATE;
@@ -71,5 +82,13 @@ public class UploadedFile {
 
     public void setFileAccess(FileAccess fileAccess) {
         this.fileAccess = fileAccess;
+    }
+
+    public List<User> getAccessList() {
+        return accessList;
+    }
+
+    public void setAccessList(List<User> accessList) {
+        this.accessList = accessList;
     }
 }

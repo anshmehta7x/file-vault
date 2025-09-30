@@ -3,6 +3,7 @@ package dev.anshmehta.filevault.service;
 import dev.anshmehta.filevault.cloud.S3Service;
 import dev.anshmehta.filevault.config.HashUtil;
 import dev.anshmehta.filevault.dto.FileListResponse;
+import dev.anshmehta.filevault.enums.FileAccess;
 import dev.anshmehta.filevault.model.IndividualFile;
 import dev.anshmehta.filevault.model.UploadedFile;
 import dev.anshmehta.filevault.model.User;
@@ -38,6 +39,25 @@ public class FileService {
             return 0L;
         }
         return file.getSize();
+    }
+
+    public FileListResponse getFileById(String fileId, User user) throws Exception {
+        Optional<UploadedFile> uploadedFile = uploadedFileRepository.findById(fileId);
+        if (uploadedFile.isEmpty()) {
+            throw new Exception("File does not exist");
+        }
+        if(!uploadedFile.get().getFileAccess().equals(FileAccess.PUBLIC) && !uploadedFile.get().getOwner().getUserId().equals(user.getUserId())) {
+            throw new Exception("Unauthorized to access this file");
+        }
+
+        UploadedFile file = uploadedFile.get();
+        return new FileListResponse(
+                file.getFileId(),
+                file.getFilename(),
+                file.getFileAccess(),
+                file.getIndividualFile().getFileSize(),
+                file.getIndividualFile().getUrl()
+        );
     }
 
     public List<FileListResponse> getAllFilesForUser(User owner) {
@@ -174,5 +194,18 @@ public class FileService {
                 .exceptionally(ex -> false);
     }
 
+    public boolean renameFile(String newName, String fileId, User user) throws Exception {
+        Optional<UploadedFile> uploadedFile = uploadedFileRepository.findById(fileId);
+        if (uploadedFile.isEmpty()) {
+            throw new Exception("File does not exist");
+        }
+        UploadedFile fileToRename = uploadedFile.get();
+        if(!fileToRename.getOwner().getUserId().equals(user.getUserId())) {
+            throw new Exception("Unauthorized to rename this file");
+        }
+        fileToRename.setFilename(newName);
+        uploadedFileRepository.save(fileToRename);
+        return true;
+    }
 
 }
