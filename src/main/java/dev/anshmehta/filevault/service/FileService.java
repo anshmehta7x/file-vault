@@ -52,6 +52,7 @@ public class FileService {
 
     public CompletableFuture<Optional<String>> createFile(MultipartFile file, User user) throws Exception {
         String fileHash = HashUtil.getFileHash(file);
+        System.out.println("HERE 1");
         Long fileSize = convertFileSizeToLong(file);
         if (fileSize <= 0L) {
             throw new Exception("File is Empty");
@@ -91,7 +92,7 @@ public class FileService {
         }
     }
 
-    public CompletableFuture<Boolean> deleteFile(String fileId) throws Exception {
+    public CompletableFuture<Boolean> deleteFile(String fileId, User user) throws Exception {
         Optional<UploadedFile> uploadedFile = uploadedFileRepository.findById(fileId);
 
         if (uploadedFile.isEmpty()) {
@@ -101,8 +102,11 @@ public class FileService {
         UploadedFile fileToDelete = uploadedFile.get();
         IndividualFile individualFile = fileToDelete.getIndividualFile();
 
+        if(!fileToDelete.getOwner().getUserId().equals(user.getUserId())) {
+            throw new Exception("Unauthorized to delete this file");
+        }
+
         if (individualFile.getUploadCount() == 1) {
-            // Last reference - delete from S3 and database
             return s3Service.deleteFile(individualFile.getUrl())
                     .thenApply(success -> {
                         if (success) {
@@ -117,7 +121,6 @@ public class FileService {
                         throw new RuntimeException("Error deleting file: " + ex.getMessage(), ex);
                     });
         } else {
-            // Still other references - just decrement count
             individualFile.decrementUploadCount();
             individualFileRepository.save(individualFile);
             uploadedFileRepository.delete(fileToDelete);
