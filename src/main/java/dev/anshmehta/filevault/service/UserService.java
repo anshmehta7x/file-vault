@@ -5,6 +5,7 @@ import dev.anshmehta.filevault.config.JwtUtil;
 import dev.anshmehta.filevault.dto.UserListResponse;
 import dev.anshmehta.filevault.model.User;
 import dev.anshmehta.filevault.repository.UserRepository;
+import org.springframework.data.util.Pair;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +24,7 @@ public class UserService {
         this.jwtUtil = jwtUtil;
     }
 
-    public String registerUser(String username, String password) {
+    public Pair<String,String> registerUser(String username, String password) {
         if(userRepository.existsByUsername(username)) {
             return null; // User already exists
         } else {
@@ -32,7 +33,7 @@ public class UserService {
             String hashedPassword = passwordEncoder.encode(password);
             newUser.setPasswordHash(hashedPassword);
             userRepository.save(newUser);
-            return jwtUtil.generateToken(newUser.getUserId());
+            return Pair.of(jwtUtil.generateToken(newUser.getUserId()),newUser.getUserId());
         }
     }
 
@@ -42,10 +43,10 @@ public class UserService {
                 .orElse(false);
     }
 
-    public String loginUser(String username, String password) {
+    public Pair<String,String> loginUser(String username, String password) {
         if (authenticateUser(username, password)) {
             return userRepository.findByUsername(username)
-                    .map(user -> jwtUtil.generateToken(user.getUserId()))
+                    .map(user -> Pair.of(jwtUtil.generateToken(user.getUserId()),user.getUserId()))
                     .orElse(null);
         }
         return null;

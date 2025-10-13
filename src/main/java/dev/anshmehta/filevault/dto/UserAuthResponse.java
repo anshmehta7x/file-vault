@@ -1,16 +1,19 @@
 package dev.anshmehta.filevault.dto;
+import org.springframework.data.util.Pair;
 
 public class UserAuthResponse {
     private String message;
+    private String userId;
     private String token;
 
     public UserAuthResponse(String message) {
         this.message = message;
     }
 
-    public UserAuthResponse(String message, String token) {
+    public UserAuthResponse(String message, Pair<String,String> data) {
         this.message = message;
-        this.token = token;
+        this.token = data.getFirst();
+        this.userId = data.getSecond();
     }
 
     public String getMessage() {
@@ -27,5 +30,13 @@ public class UserAuthResponse {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }

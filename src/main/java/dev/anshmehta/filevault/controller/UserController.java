@@ -4,6 +4,7 @@ import dev.anshmehta.filevault.dto.UserAuthRequest;
 import dev.anshmehta.filevault.dto.UserAuthResponse;
 import dev.anshmehta.filevault.dto.UserListResponse;
 import dev.anshmehta.filevault.service.UserService;
+import org.springframework.data.util.Pair;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +22,7 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<UserAuthResponse> registerUser(@RequestBody UserAuthRequest userAuthRequest) {
-        String result = userService.registerUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
+        Pair<String,String> result = userService.registerUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
         if (result != null) {
             UserAuthResponse response = new UserAuthResponse("User registered successfully", result);
             return ResponseEntity.ok(response);
@@ -33,9 +34,9 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<UserAuthResponse> loginUser(@RequestBody UserAuthRequest userAuthRequest) {
-        String token = userService.loginUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
-        if (token != null) {
-            UserAuthResponse response = new UserAuthResponse("User logged in successfully", token);
+        Pair<String,String> result = userService.loginUser(userAuthRequest.getUsername(), userAuthRequest.getPassword());
+        if (result != null) {
+            UserAuthResponse response = new UserAuthResponse("User logged in successfully", result);
             return ResponseEntity.ok(response);
         } else {
             UserAuthResponse response = new UserAuthResponse("User login failed");
